@@ -19,18 +19,18 @@ const db = new VexORM(sqlite.open(''))
     membershipNumber: 'str',
     phoneNumber: 'str',
     createdAt: 'datetime',
-    status: { type: 'str', index: true, default: 'active' as const },
+    status: { type: 'str', index: true, default: '!23' },
+    borrowRecords: { reference: 'model.borrowRecords[]' },
   })
   .registerModel('borrowRecords', {
     id: { type: 'int', primaryKey: true },
-    bookId: { type: 'int', foreignKey: 'books.id', index: true },
-    book: 'model.books',
-    memberId: { type: 'int', foreignKey: 'members.id', index: true },
-    member: 'model.members',
+    book: { reference: 'model.books' },
+    member: { reference: 'model.members' },
     borrowDate: 'datetime',
     dueDate: 'datetime',
     returnDate: 'datetime',
-    status: 'str',
+    status: { type: 'str', default: '' as 'active' | 'inactive' },
+    status2: { type: 'str', default: 1 },
     createdAt: 'datetime',
   })
 

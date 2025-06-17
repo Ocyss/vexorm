@@ -1,10 +1,9 @@
 import type BaseDriver from './driver/base'
 import type {
   BaseModelDefinition,
-  InferFieldType,
+  InferModelField,
   ModelFieldDefinitions,
   ModelFieldTypeInfer,
-  ShorthandFieldHandler,
   ShorthandModelFieldDefinitions,
   ShorthandModelFieldHandler,
 } from './types'
@@ -19,7 +18,7 @@ export default class VexORM<
   const in out DataType extends string,
   const in out NativeType extends string,
   const in out DataTypeInfer extends Record<DataType, unknown>,
-  const out ModelDefinition extends BaseModelDefinition<DataType, DataTypeInfer>,
+  const out ModelDefinition extends BaseModelDefinition<DataType>,
   const out ModelTypes extends ModelFieldTypeInfer<DataType, DataTypeInfer, ModelDefinition> = ModelFieldTypeInfer<
     DataType,
     DataTypeInfer,
@@ -42,31 +41,25 @@ export default class VexORM<
     this.modelRegister = {} as ModelDefinition
   }
 
-  registerModel<
-    const Name extends string,
-    const Fields extends ShorthandModelFieldDefinitions<DataType, DataTypeInfer>,
-  >(
+  
+  registerModel<const Name extends string, Fields extends ShorthandModelFieldDefinitions<DataType>>(
     name: Name,
     fields: Fields,
     options?: never,
   ): VexORM<
-    DataType | `model.${Name}`,
+    DataType | `model.${Name}` | `model.${Name}[]`,
     NativeType,
-    DataTypeInfer &
-      Record<
-        `model.${Name}`,
-        {
-          [FieldName in keyof Fields]: InferFieldType<
-            DataType,
-            DataTypeInfer,
-            ShorthandFieldHandler<DataType, DataTypeInfer, Fields[FieldName]>
-          >
-        }
-      >,
+    DataTypeInfer & {
+      [_ in `model.${Name}`]: InferModelField<DataType, DataTypeInfer, ShorthandModelFieldHandler<DataType, Fields>>
+    } & {
+      [_ in `model.${Name}[]`]: Array<
+        InferModelField<DataType, DataTypeInfer, ShorthandModelFieldHandler<DataType, Fields>>
+      >
+    },
     ModelDefinition & {
       [x in Name]: {
         options?: never
-        fields: ShorthandModelFieldHandler<DataType, DataTypeInfer, Fields>
+        fields: ShorthandModelFieldHandler<DataType, Fields>
       }
     }
   > {
@@ -77,7 +70,7 @@ export default class VexORM<
           acc[key] = typeof value === 'string' ? { type: value } : value
           return acc
         },
-        {} as ModelFieldDefinitions<DataType, DataTypeInfer>,
+        {} as ModelFieldDefinitions<DataType>,
       ),
     } as ModelDefinition[Name]
     return this as any
