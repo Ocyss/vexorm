@@ -1,11 +1,10 @@
 import type BaseDriver from './driver/base'
 import type {
   BaseModelDefinition,
-  InferModelField,
   ModelFieldDefinitions,
   ModelFieldTypeInfer,
+  ModelsDefinitionMerge,
   ShorthandModelFieldDefinitions,
-  ShorthandModelFieldHandler,
 } from './types'
 
 export interface TableFunction extends Function {
@@ -15,55 +14,47 @@ export interface TableFunction extends Function {
 }
 
 export default class VexORM<
-  const in out DataType extends string,
   const in out NativeType extends string,
+  const in out DataType extends string,
   const in out DataTypeInfer extends Record<DataType, unknown>,
-  const out ModelDefinition extends BaseModelDefinition<DataType>,
-  const out ModelTypes extends ModelFieldTypeInfer<DataType, DataTypeInfer, ModelDefinition> = ModelFieldTypeInfer<
+  const in out ModelNames extends string,
+  const in out ModelsDefinition extends BaseModelDefinition<DataType>,
+  const out ModelsType extends ModelFieldTypeInfer<DataType, DataTypeInfer, any> = ModelFieldTypeInfer<
     DataType,
     DataTypeInfer,
-    ModelDefinition
+    ModelsDefinition
   >,
 > {
   '~dataType' = null as unknown as DataType
   '~nativeType' = null as unknown as NativeType
   '~dataTypeInfer' = null as unknown as DataTypeInfer
-  '~modelDefinition' = null as unknown as ModelDefinition
-  '~modelTypes' = null as unknown as ModelTypes
+  '~modelNames' = null as unknown as ModelNames
+  '~modelsDefinition' = null as unknown as ModelsDefinition
+  '~modelsType' = null as unknown as ModelsType
 
   opt: {}
   driver: BaseDriver<DataType, NativeType, DataTypeInfer>
-  modelRegister: ModelDefinition
+  modelRegister: ModelsDefinition
 
   constructor(driver: BaseDriver<DataType, NativeType, DataTypeInfer>, opt?: {}) {
     this.driver = driver
     this.opt = opt ?? {}
-    this.modelRegister = {} as ModelDefinition
+    this.modelRegister = {} as ModelsDefinition
   }
 
-  
-  registerModel<const Name extends string, Fields extends ShorthandModelFieldDefinitions<DataType>>(
+  define<const Name extends string, const Fields extends ShorthandModelFieldDefinitions<DataType>>(
     name: Name,
     fields: Fields,
     options?: never,
   ): VexORM<
-    DataType | `model.${Name}` | `model.${Name}[]`,
     NativeType,
-    DataTypeInfer & {
-      [_ in `model.${Name}`]: InferModelField<DataType, DataTypeInfer, ShorthandModelFieldHandler<DataType, Fields>>
-    } & {
-      [_ in `model.${Name}[]`]: Array<
-        InferModelField<DataType, DataTypeInfer, ShorthandModelFieldHandler<DataType, Fields>>
-      >
-    },
-    ModelDefinition & {
-      [x in Name]: {
-        options?: never
-        fields: ShorthandModelFieldHandler<DataType, Fields>
-      }
-    }
+    DataType,
+    DataTypeInfer,
+    ModelNames & Name,
+    ModelsDefinitionMerge<ModelsDefinition, DataType, Name, Fields>,
+    ModelFieldTypeInfer<DataType, DataTypeInfer, ModelsDefinitionMerge<ModelsDefinition, DataType, Name, Fields>>
   > {
-    this.modelRegister[name] = {
+    this.modelRegister[name as unknown as ModelNames] = {
       options,
       fields: Object.entries(fields).reduce(
         (acc, [key, value]) => {
@@ -72,13 +63,13 @@ export default class VexORM<
         },
         {} as ModelFieldDefinitions<DataType>,
       ),
-    } as ModelDefinition[Name]
+    } as ModelsDefinition[ModelNames]
     return this as any
   }
 
-  get<T extends keyof ModelDefinition>(name: T): ModelTypes[T] {
+  get<T extends keyof ModelsDefinition>(name: T): ModelsType[T] {
     console.log(name)
-    return {} as ModelTypes[T]
+    return {} as ModelsType[T]
   }
 }
 

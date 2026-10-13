@@ -1,15 +1,26 @@
-export const StandardDataType = ['int', 'float', 'str', 'bool', 'bytes', 'datetime', 'timestamp', 'json'] as const
+export const StandardDataType = [
+  'int',
+  'float',
+  'text',
+  'bool',
+  'bytes',
+  'datetime',
+  'timestamp',
+  'json',
+  'uuid',
+] as const
 export type StandardDataType = (typeof StandardDataType)[number]
 
 export type StandardDataTypeMap = {
   int: number
   float: number
-  str: string
+  text: string
   bool: boolean
   bytes: Uint8Array
   datetime: Date
   timestamp: number
   json: unknown
+  uuid: string
 }
 
 export default abstract class BaseDriver<

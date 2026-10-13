@@ -1,42 +1,38 @@
-import { expect, test } from '@rstest/core'
 import sqlite from '@/driver/sqlite'
 import VexORM from '@/index'
 
 const db = new VexORM(sqlite.open(''))
-  .registerModel('books', {
-    id: 'int',
-    title: 'str',
-    author: 'str',
-    isbn: 'str',
-    totalCopies: 'int',
-    availableCopies: 'int',
-    createdAt: 'datetime',
+  .define('user', {
+    id: 'uuid',
+    name: 'text',
+    email: { type: 'text', unique: true },
+    status: { type: 'text', enum: ['active', 'inactive'], default: 'active', index: true },
+    createdAt: { type: 'datetime', default: new Date() },
+    posts: { reference: 'post[]' },
   })
-  .registerModel('members', {
+  .define('post', {
     id: 'int',
-    name: 'str',
-    email: 'str',
-    membershipNumber: 'str',
-    phoneNumber: 'str',
     createdAt: 'datetime',
-    status: { type: 'str', index: true, default: '!23' },
-    borrowRecords: { reference: 'model.borrowRecords[]' },
+    updatedAt: 'timestamp',
+    title: 'text',
+    content: { type: 'text', notNull: true },
+    published: { type: 'bool', default: false },
+    author: { reference: 'user', foreignKey: 'authorId' },
+    tags: { type: 'json', default: [] },
+    comments: { reference: 'comment[]' },
   })
-  .registerModel('borrowRecords', {
-    id: { type: 'int', primaryKey: true },
-    book: { reference: 'model.books' },
-    member: { reference: 'model.members' },
-    borrowDate: 'datetime',
-    dueDate: 'datetime',
-    returnDate: 'datetime',
-    status: { type: 'str', default: '' as 'active' | 'inactive' },
-    status2: { type: 'str', default: 1 },
-    createdAt: 'datetime',
+  .define('comment', {
+    id: 'int',
+    content: 'text',
+    author: { reference: 'user' },
+    post: { reference: 'post', onDelete: 'CASCADE' },
+    likes: { type: 'int', default: 0 },
   })
 
-test('library system model definition', () => {
-  expect(db.get('boo1ks')).toBeDefined()
-  expect(db['~modelTypes'].books).toBeDefined()
-  expect(db['~modelTypes'].members).toBeDefined()
-  expect(db['~modelTypes'].borrowRecords).toBeDefined()
-})
+export default [
+  db.get('user'),
+  db['~modelsType'].user,
+  db['~modelsType'].post,
+  db['~modelsType'].comment.author?.posts?.[0]?.comments?.[0]?.content,
+  db['~modelsType'].comment,
+]
